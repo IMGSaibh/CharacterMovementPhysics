@@ -130,10 +130,7 @@ public class MovingSphereRigidbody : MonoBehaviour
     }
 
     #region collision detection
-    private bool isGrounded()
-    {
-        return Physics.CheckCapsule(col.bounds.max, col.bounds.min, col.bounds.extents.x, goundLayers);
-    }
+   
 
     /// <summary>
     /// performs all needed collsion detections
@@ -237,6 +234,10 @@ public class MovingSphereRigidbody : MonoBehaviour
         return colTransform.TransformPoint(localNorm);
     }
 
+    private bool isGrounded()
+    {
+        return Physics.CheckCapsule(col.bounds.max, col.bounds.min, col.bounds.extents.x, goundLayers);
+    }
     #endregion
 
     private void OnDisable()
