@@ -2,6 +2,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
+/// <summary>
+/// /https://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php?print=1
+/// </summary>
+
 public class MovingSphereRigidbody : MonoBehaviour
 {
     private DeviceInput deviceInput;
@@ -131,6 +135,9 @@ public class MovingSphereRigidbody : MonoBehaviour
         return Physics.CheckCapsule(col.bounds.max, col.bounds.min, col.bounds.extents.x, goundLayers);
     }
 
+    /// <summary>
+    /// performs all needed collsion detections
+    /// </summary>
     private void CollisionDetection() 
     {
 
@@ -140,17 +147,20 @@ public class MovingSphereRigidbody : MonoBehaviour
         {
             Vector3 contactPoint = Vector3.zero;
 
+            // for different colliders
             if (col is BoxCollider)
             {
-                contactPoint = col.ClosestPointOnBounds(transform.position);
+                contactPoint = ClosestPointOn((BoxCollider)col, transform.position);
             }
             else if (col is SphereCollider)
             {
                 contactPoint = ClosestPointOn((SphereCollider)col, transform.position);
             }
 
+            // debug purposes
             DebugDraw.DrawMarker(contactPoint, 2.0f, Color.red, 0.0f, false);
 
+            // result 
             Vector3 distance = transform.position - contactPoint;
 
             transform.position += Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
@@ -158,6 +168,22 @@ public class MovingSphereRigidbody : MonoBehaviour
             closestPointContact = true;
 
         }
+    }
+
+    /// <summary>
+    /// performs an closestPointAlgorithmn with different obstacle rotation
+    /// </summary>
+    /// <param name="collider"></param>
+    /// <param name="to"></param>
+    /// <returns></returns>
+    Vector3 ClosestPointOn(BoxCollider collider, Vector3 to)
+    {
+        if (collider.transform.rotation == Quaternion.identity)
+        {
+            return collider.ClosestPointOnBounds(to);
+        }
+
+        return closestPointOnOBB(collider, to);
     }
 
     /// <summary>
@@ -179,6 +205,37 @@ public class MovingSphereRigidbody : MonoBehaviour
         return p;
     }
 
+    /// <summary>
+    /// Oriented Bounding Box interscetion Test
+    /// for geometric rotated obstacles 
+    /// </summary>
+    /// <param name="collider"></param>
+    /// <param name="to"></param>
+    /// <returns></returns>
+    Vector3 closestPointOnOBB(BoxCollider collider, Vector3 to)
+    {
+        // Cache the collider transform
+        Transform colTransform = collider.transform;
+
+        // Firstly, transform the point into the space of the collider
+        var local = colTransform.InverseTransformPoint(to);
+
+        // Now, shift it to be in the center of the box
+        local -= collider.center;
+
+        // Inverse scale it by the colliders scale
+        var localNorm = new Vector3(
+            Mathf.Clamp(local.x, -collider.size.x * 0.5f, collider.size.x * 0.5f),
+            Mathf.Clamp(local.y, -collider.size.y * 0.5f, collider.size.y * 0.5f),
+            Mathf.Clamp(local.z, -collider.size.z * 0.5f, collider.size.z * 0.5f)
+        );
+
+        // Now we undo our transformations
+        localNorm += collider.center;
+
+        // Return resulting point
+        return colTransform.TransformPoint(localNorm);
+    }
 
     #endregion
 
