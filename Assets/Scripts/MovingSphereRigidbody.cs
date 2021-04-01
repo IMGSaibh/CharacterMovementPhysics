@@ -1,11 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections.Generic;
-using System;
-
-/// <summary>
-/// /https://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php?print=1
-/// </summary>
 
 public class MovingSphereRigidbody : MonoBehaviour
 {
