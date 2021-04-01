@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using System;
 
 /// <summary>
 /// /https://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php?print=1
@@ -9,13 +10,14 @@ using System.Collections.Generic;
 public class MovingSphereRigidbody : MonoBehaviour
 {
     private DeviceInput deviceInput;
-
-    private Vector2 gamepadInputStick;
+    private Vector2 deviceInputMove;
     private Vector3 velocity;
     private Vector3 projectOnPlane;
     private Quaternion rotationToCamForward;
 
+    [Header("Physics")]
     [SerializeField] public float gravity = -9.81f;
+    [SerializeField, Range(0f, 1f)] float radius = 0.5f;
 
 
     [Header("Move Settings")]
@@ -35,13 +37,12 @@ public class MovingSphereRigidbody : MonoBehaviour
 
 
     private Rigidbody rBody;
-    public Collider col;
+    public CapsuleCollider col;
     public LayerMask goundLayers;
 
     // for collisions
     // bool for closetPoint algorithmus
     private bool closestPointContact = false;
-    [SerializeField] float radius = 0.5f;
 
     private void Awake()
     {
@@ -58,10 +59,15 @@ public class MovingSphereRigidbody : MonoBehaviour
         this.deviceInput.Player.Move.performed += this.OnMove;
         this.deviceInput.Player.Move.canceled += this.OnMove;
 
+        this.deviceInput.Player.WASD.performed += this.OnMoveWASD;
+        this.deviceInput.Player.WASD.canceled += this.OnMoveWASD;
+
+
         this.deviceInput.Player.Jump.performed += this.OnJump;
         this.deviceInput.Player.Jump.canceled += this.OnJump;
 
     }
+
     void Start()
     {
 
@@ -70,21 +76,34 @@ public class MovingSphereRigidbody : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+       
+        //Applyforces();
+        //UpdatePositions();
         CollisionDetection();
+        //SolveConstraints();
+        //DisplayResults();
+
     }
 
     private void FixedUpdate()
     {
+
+
         this.Jump();
         this.Move();
+
     }
+    private void OnMoveWASD(InputAction.CallbackContext context)
+    {
+        deviceInputMove =  context.ReadValue<Vector2>();
+    }
+
 
     private void OnMove(InputAction.CallbackContext context)
     {
-        //Debug.Log("OnMove");
-        this.gamepadInputStick = context.ReadValue<Vector2>();
 
-
+        Debug.Log("OnMove");
+        this.deviceInputMove = context.ReadValue<Vector2>();
     }
 
     private void OnJump(InputAction.CallbackContext context) 
@@ -94,15 +113,15 @@ public class MovingSphereRigidbody : MonoBehaviour
     }
     public void Move()
     {
-        this.gamepadInputStick = Vector2.ClampMagnitude(this.gamepadInputStick, 1f) * this.maxSpeed;
+        this.deviceInputMove = Vector2.ClampMagnitude(this.deviceInputMove, 1f) * this.maxSpeed;
 
         // displacement so movement will not be teleportation anymore e.g Controlling Velocity
         // see <see href="https://catlikecoding.com/unity/tutorials/movement/sliding-a-sphere/">HERE</see>
 
         this.acceleration = this.maxAcceleration * Time.deltaTime;
 
-        this.velocity.x = Mathf.MoveTowards(this.velocity.x, gamepadInputStick.x, acceleration);
-        this.velocity.z = Mathf.MoveTowards(this.velocity.z, gamepadInputStick.y, acceleration);
+        this.velocity.x = Mathf.MoveTowards(this.velocity.x, deviceInputMove.x, acceleration);
+        this.velocity.z = Mathf.MoveTowards(this.velocity.z, deviceInputMove.y, acceleration);
 
         // camera indepandent movement
         this.projectOnPlane = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up);
@@ -116,21 +135,16 @@ public class MovingSphereRigidbody : MonoBehaviour
 
     public void Jump()
     {
-        if (requireJump && isGrounded())
-        {
-            // jumping is all about overcome gravity
-            //velocity.y += Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
-            //rBody.velocity = velocity;
+        
+        // jumping is all about overcome gravity
+        //velocity.y += Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
+        //rBody.velocity = velocity;
 
-            //rBody.velocity = new Vector3(rBody.velocity.x, 0, rBody.velocity.z);
-            //rBody.AddForce(Vector3.up * jumpSpeed, ForceMode.Impulse);
-        }
+        //rBody.velocity = new Vector3(rBody.velocity.x, 0, rBody.velocity.z);
+        //rBody.AddForce(Vector3.up * jumpSpeed, ForceMode.Impulse);
 
 
-    }
-
-    #region collision detection
-   
+    }   
 
     /// <summary>
     /// performs all needed collsion detections
@@ -139,23 +153,25 @@ public class MovingSphereRigidbody : MonoBehaviour
     {
 
         closestPointContact = false;
+        DebugDraw.DrawMarker(col.center, 2.0f, Color.yellow, 0.0f, false);
+        DebugDraw.DrawMarker(col.bounds.center * 0.5f, 2.0f, Color.blue, 0.0f, false);
 
-        foreach (Collider col in Physics.OverlapSphere(transform.position, radius))
+        foreach (Collider col in Physics.OverlapCapsule(col.bounds.max, col.bounds.min, radius))
         {
             Vector3 contactPoint = Vector3.zero;
 
             // for different colliders
             if (col is BoxCollider)
             {
-                contactPoint = ClosestPointOn((BoxCollider)col, transform.position);
+                contactPoint = ColliosionDetection.ClosestPointOn((BoxCollider)col, transform.position);
             }
             else if (col is SphereCollider)
             {
-                contactPoint = ClosestPointOn((SphereCollider)col, transform.position);
+                contactPoint = ColliosionDetection.ClosestPointOn((SphereCollider)col, transform.position);
             }
 
             // debug purposes
-            DebugDraw.DrawMarker(contactPoint, 2.0f, Color.red, 0.0f, false);
+            //DebugDraw.DrawMarker(contactPoint, 2.0f, Color.red, 0.0f, false);
 
             // result 
             Vector3 distance = transform.position - contactPoint;
@@ -166,79 +182,6 @@ public class MovingSphereRigidbody : MonoBehaviour
 
         }
     }
-
-    /// <summary>
-    /// performs an closestPointAlgorithmn with different obstacle rotation
-    /// </summary>
-    /// <param name="collider"></param>
-    /// <param name="to"></param>
-    /// <returns></returns>
-    Vector3 ClosestPointOn(BoxCollider collider, Vector3 to)
-    {
-        if (collider.transform.rotation == Quaternion.identity)
-        {
-            return collider.ClosestPointOnBounds(to);
-        }
-
-        return closestPointOnOBB(collider, to);
-    }
-
-    /// <summary>
-    /// closest point algorithm for spherecollider
-    /// </summary>
-    /// <param name="collider"></param>
-    /// <param name="to"></param>
-    /// <returns></returns>
-    private Vector3 ClosestPointOn(SphereCollider collider, Vector3 to) 
-    {
-        Vector3 p;
-
-        p = to - collider.transform.position;
-        p.Normalize();
-
-        p *= collider.radius * collider.transform.localScale.x;
-        p += collider.transform.position;
-
-        return p;
-    }
-
-    /// <summary>
-    /// Oriented Bounding Box interscetion Test
-    /// for geometric rotated obstacles 
-    /// </summary>
-    /// <param name="collider"></param>
-    /// <param name="to"></param>
-    /// <returns></returns>
-    Vector3 closestPointOnOBB(BoxCollider collider, Vector3 to)
-    {
-        // Cache the collider transform
-        Transform colTransform = collider.transform;
-
-        // Firstly, transform the point into the space of the collider
-        var local = colTransform.InverseTransformPoint(to);
-
-        // Now, shift it to be in the center of the box
-        local -= collider.center;
-
-        // Inverse scale it by the colliders scale
-        var localNorm = new Vector3(
-            Mathf.Clamp(local.x, -collider.size.x * 0.5f, collider.size.x * 0.5f),
-            Mathf.Clamp(local.y, -collider.size.y * 0.5f, collider.size.y * 0.5f),
-            Mathf.Clamp(local.z, -collider.size.z * 0.5f, collider.size.z * 0.5f)
-        );
-
-        // Now we undo our transformations
-        localNorm += collider.center;
-
-        // Return resulting point
-        return colTransform.TransformPoint(localNorm);
-    }
-
-    private bool isGrounded()
-    {
-        return Physics.CheckCapsule(col.bounds.max, col.bounds.min, col.bounds.extents.x, goundLayers);
-    }
-    #endregion
 
     private void OnDisable()
     {
