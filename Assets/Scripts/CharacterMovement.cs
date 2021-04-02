@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class MovingSphereRigidbody : MonoBehaviour
+public class CharacterMovement : MonoBehaviour
 {
     private DeviceInput deviceInput;
     private Vector2 deviceInputMove;
@@ -11,7 +11,12 @@ public class MovingSphereRigidbody : MonoBehaviour
 
     [Header("Physics")]
     [SerializeField] public float gravity = -9.81f;
+
+    [Header("ChracterCollider")]
     [SerializeField, Range(0f, 1f)] float radius = 0.5f;
+    [SerializeField, Range(0f, 3f)] float height = 1f;
+
+
 
 
     [Header("Move Settings")]
@@ -37,6 +42,9 @@ public class MovingSphereRigidbody : MonoBehaviour
     // for collisions
     // bool for closetPoint algorithmus
     private bool closestPointContact = false;
+
+    private Vector3 capsuleCenterDown;
+    private Vector3 capsuleCenterUp;
 
     private void Awake()
     {
@@ -64,7 +72,8 @@ public class MovingSphereRigidbody : MonoBehaviour
 
     void Start()
     {
-
+        col.radius = this.radius;
+        col.height = this.height;
     }
 
     // Update is called once per frame
@@ -73,7 +82,7 @@ public class MovingSphereRigidbody : MonoBehaviour
        
         //Applyforces();
         //UpdatePositions();
-        CollisionDetection();
+        CollisionDetectionUpdate();
         //SolveConstraints();
         //DisplayResults();
 
@@ -81,8 +90,6 @@ public class MovingSphereRigidbody : MonoBehaviour
 
     private void FixedUpdate()
     {
-
-
         this.Jump();
         this.Move();
 
@@ -95,7 +102,6 @@ public class MovingSphereRigidbody : MonoBehaviour
 
     private void OnMove(InputAction.CallbackContext context)
     {
-
         Debug.Log("OnMove");
         this.deviceInputMove = context.ReadValue<Vector2>();
     }
@@ -143,37 +149,56 @@ public class MovingSphereRigidbody : MonoBehaviour
     /// <summary>
     /// performs all needed collsion detections
     /// </summary>
-    private void CollisionDetection() 
+    private void CollisionDetectionUpdate() 
     {
 
         closestPointContact = false;
-        DebugDraw.DrawMarker(col.center, 2.0f, Color.yellow, 0.0f, false);
-        DebugDraw.DrawMarker(col.bounds.center * 0.5f, 2.0f, Color.blue, 0.0f, false);
 
-        foreach (Collider col in Physics.OverlapCapsule(col.bounds.max, col.bounds.min, radius))
+        capsuleCenterUp = new Vector3(transform.position.x, transform.position.y + col.radius, transform.position.z);
+        capsuleCenterDown = new Vector3(transform.position.x, transform.position.y - col.radius, transform.position.z);
+
+
+        //DebugDraw.DrawMarker(capsuleCenterUp, 2.0f, Color.yellow, 0.0f, false);
+        //DebugDraw.DrawMarker(capsuleCenterDown, 2.0f, Color.blue, 0.0f, false);
+
+        foreach (Collider col in Physics.OverlapCapsule(capsuleCenterDown, capsuleCenterUp, radius))
         {
             Vector3 contactPoint = Vector3.zero;
 
             // for different colliders
             if (col is BoxCollider)
             {
-                contactPoint = ColliosionDetection.ClosestPointOn((BoxCollider)col, transform.position);
+                contactPoint = CollisionDetection.ClosestPointOn((BoxCollider)col, capsuleCenterDown);
+                // result of new chracter collision after collision detection
+                Vector3 distance = capsuleCenterDown - contactPoint;
+                transform.position += Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
             }
             else if (col is SphereCollider)
             {
-                contactPoint = ColliosionDetection.ClosestPointOn((SphereCollider)col, transform.position);
+                contactPoint = CollisionDetection.ClosestPointOn((SphereCollider)col, capsuleCenterDown);
+                // result of new chracter collision after collision detection
+                Vector3 distance = capsuleCenterDown - contactPoint;
+                transform.position += Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
+
+
+            }
+            else if(col is CapsuleCollider)
+            {
+                //TODO: implement logic for other players
             }
 
+
             // debug purposes
-            //DebugDraw.DrawMarker(contactPoint, 2.0f, Color.red, 0.0f, false);
+            if (contactPoint != Vector3.zero)
+            {
+                DebugDraw.DrawMarker(contactPoint, 2.0f, Color.red, 0.0f, false);
+            }
 
-            // result 
-            Vector3 distance = transform.position - contactPoint;
 
-            transform.position += Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
+
+
 
             closestPointContact = true;
-
         }
     }
 
@@ -184,7 +209,14 @@ public class MovingSphereRigidbody : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        Gizmos.color = closestPointContact ? Color.cyan : Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, radius);
+        if (Application.isPlaying)
+        {
+            Gizmos.color = closestPointContact ? Color.cyan : Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, radius);
+
+            Gizmos.color = closestPointContact ? Color.red : Color.yellow;
+            Gizmos.DrawWireSphere(capsuleCenterUp, radius);
+            Gizmos.DrawWireSphere(capsuleCenterDown, radius);
+        }
     }
 }

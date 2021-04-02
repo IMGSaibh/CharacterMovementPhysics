@@ -5,8 +5,9 @@ using UnityEngine;
 /// https://wickedengine.net/2020/04/26/capsule-collision-detection/
 /// </summary>
 
-public static class ColliosionDetection
+public static class CollisionDetection
 {
+
     /// <summary>
     /// Intersection test of oriented bounding box
     /// </summary>
@@ -51,13 +52,14 @@ public static class ColliosionDetection
             return collider.ClosestPointOnBounds(characterOrigin);
         }
 
+        // in case bounding box has arbitrary orientation
         return OrientedBoundingBox_OBB(collider, characterOrigin);
     }
 
     /// <summary>
     /// performs an closestPointAlgorithmn with different obstacle rotation
     /// </summary>
-    /// <param name="collider">spherecollider</param>
+    /// <param name="collider">Spherecollider</param>
     /// <param name="characterOrigin">the transform position of chracter collider</param>
     /// <returns></returns>
     public static Vector3 ClosestPointOn(SphereCollider collider, Vector3 characterOrigin)
@@ -67,6 +69,7 @@ public static class ColliosionDetection
         p = characterOrigin - collider.transform.position;
         p.Normalize();
 
+        //outborder of sphere
         p *= collider.radius * collider.transform.localScale.x;
         p += collider.transform.position;
 
