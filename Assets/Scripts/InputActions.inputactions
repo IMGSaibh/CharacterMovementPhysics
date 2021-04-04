@@ -28,6 +28,14 @@
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": ""
+                },
+                {
+                    "name": "JumpSpace",
+                    "type": "Button",
+                    "id": "a5aa2f93-9b58-4411-8cf8-4daf9ff5256a",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
                 }
             ],
             "bindings": [
@@ -151,6 +159,17 @@
                     "action": "WASD",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "d54cab95-c57a-4472-90f6-fa6fc29b187a",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "JumpSpace",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }

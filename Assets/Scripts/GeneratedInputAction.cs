@@ -41,6 +41,14 @@ public class @DeviceInput : IInputActionCollection, IDisposable
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""JumpSpace"",
+                    ""type"": ""Button"",
+                    ""id"": ""a5aa2f93-9b58-4411-8cf8-4daf9ff5256a"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -164,6 +172,17 @@ public class @DeviceInput : IInputActionCollection, IDisposable
                     ""action"": ""WASD"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d54cab95-c57a-4472-90f6-fa6fc29b187a"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""JumpSpace"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -175,6 +194,7 @@ public class @DeviceInput : IInputActionCollection, IDisposable
         m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
         m_Player_WASD = m_Player.FindAction("WASD", throwIfNotFound: true);
+        m_Player_JumpSpace = m_Player.FindAction("JumpSpace", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -227,6 +247,7 @@ public class @DeviceInput : IInputActionCollection, IDisposable
     private readonly InputAction m_Player_Move;
     private readonly InputAction m_Player_Jump;
     private readonly InputAction m_Player_WASD;
+    private readonly InputAction m_Player_JumpSpace;
     public struct PlayerActions
     {
         private @DeviceInput m_Wrapper;
@@ -234,6 +255,7 @@ public class @DeviceInput : IInputActionCollection, IDisposable
         public InputAction @Move => m_Wrapper.m_Player_Move;
         public InputAction @Jump => m_Wrapper.m_Player_Jump;
         public InputAction @WASD => m_Wrapper.m_Player_WASD;
+        public InputAction @JumpSpace => m_Wrapper.m_Player_JumpSpace;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -252,6 +274,9 @@ public class @DeviceInput : IInputActionCollection, IDisposable
                 @WASD.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnWASD;
                 @WASD.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnWASD;
                 @WASD.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnWASD;
+                @JumpSpace.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnJumpSpace;
+                @JumpSpace.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnJumpSpace;
+                @JumpSpace.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnJumpSpace;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -265,6 +290,9 @@ public class @DeviceInput : IInputActionCollection, IDisposable
                 @WASD.started += instance.OnWASD;
                 @WASD.performed += instance.OnWASD;
                 @WASD.canceled += instance.OnWASD;
+                @JumpSpace.started += instance.OnJumpSpace;
+                @JumpSpace.performed += instance.OnJumpSpace;
+                @JumpSpace.canceled += instance.OnJumpSpace;
             }
         }
     }
@@ -274,5 +302,6 @@ public class @DeviceInput : IInputActionCollection, IDisposable
         void OnMove(InputAction.CallbackContext context);
         void OnJump(InputAction.CallbackContext context);
         void OnWASD(InputAction.CallbackContext context);
+        void OnJumpSpace(InputAction.CallbackContext context);
     }
 }

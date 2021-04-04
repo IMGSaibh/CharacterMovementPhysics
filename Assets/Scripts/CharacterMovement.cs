@@ -16,9 +16,6 @@ public class CharacterMovement : MonoBehaviour
     [SerializeField, Range(0f, 1f)] float radius = 0.5f;
     [SerializeField, Range(0f, 3f)] float height = 1f;
 
-
-
-
     [Header("Move Settings")]
     [SerializeField, Range(0f, 100f)] public float maxSpeed = 10f;
     [SerializeField, Range(0f, 300f)] public float maxAcceleration = 10f;
@@ -40,11 +37,12 @@ public class CharacterMovement : MonoBehaviour
     public LayerMask goundLayers;
 
     // for collisions
-    // bool for closetPoint algorithmus
+    // bool for closetPoint algorithmus debug
     private bool closestPointContact = false;
 
     private Vector3 capsuleCenterDown;
     private Vector3 capsuleCenterUp;
+    private bool isGrounded = false;
 
     private void Awake()
     {
@@ -64,9 +62,15 @@ public class CharacterMovement : MonoBehaviour
         this.deviceInput.Player.WASD.performed += this.OnMoveWASD;
         this.deviceInput.Player.WASD.canceled += this.OnMoveWASD;
 
-
         this.deviceInput.Player.Jump.performed += this.OnJump;
         this.deviceInput.Player.Jump.canceled += this.OnJump;
+
+        this.deviceInput.Player.JumpSpace.performed += this.OnJumpSpace;
+        this.deviceInput.Player.JumpSpace.canceled += this.OnJumpSpace;
+
+
+
+     
 
     }
 
@@ -111,6 +115,14 @@ public class CharacterMovement : MonoBehaviour
         Debug.Log("OnJump");
         this.requireJump = context.ReadValueAsButton();
     }
+
+    private void OnJumpSpace(InputAction.CallbackContext context) 
+    {
+        Debug.Log("OnJumpSpace");
+        this.requireJump = context.ReadValueAsButton();
+
+    }
+
     public void Move()
     {
         this.deviceInputMove = Vector2.ClampMagnitude(this.deviceInputMove, 1f) * this.maxSpeed;
@@ -135,7 +147,10 @@ public class CharacterMovement : MonoBehaviour
 
     public void Jump()
     {
-        
+        if (isGrounded)
+        {
+
+        }
         // jumping is all about overcome gravity
         //velocity.y += Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
         //rBody.velocity = velocity;
@@ -151,6 +166,8 @@ public class CharacterMovement : MonoBehaviour
     /// </summary>
     private void CollisionDetectionUpdate() 
     {
+
+        isGrounded = IsGrounded();
 
         closestPointContact = false;
 
@@ -168,9 +185,9 @@ public class CharacterMovement : MonoBehaviour
             // for different colliders
             if (col is BoxCollider)
             {
-                contactPoint = CollisionDetection.ClosestPointOn((BoxCollider)col, capsuleCenterDown);
+                contactPoint = CollisionDetection.ClosestPointOn((BoxCollider)col, transform.position);
                 // result of new chracter collision after collision detection
-                Vector3 distance = capsuleCenterDown - contactPoint;
+                Vector3 distance = transform.position - contactPoint;
                 transform.position += Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
             }
             else if (col is SphereCollider)
@@ -202,6 +219,11 @@ public class CharacterMovement : MonoBehaviour
         }
     }
 
+    private bool IsGrounded()
+    {
+        return Physics.CheckCapsule(capsuleCenterDown,capsuleCenterUp, radius, goundLayers);
+    }
+
     private void OnDisable()
     {
         this.deviceInput.Disable();
@@ -215,7 +237,7 @@ public class CharacterMovement : MonoBehaviour
             Gizmos.DrawWireSphere(transform.position, radius);
 
             Gizmos.color = closestPointContact ? Color.red : Color.yellow;
-            Gizmos.DrawWireSphere(capsuleCenterUp, radius);
+            //Gizmos.DrawWireSphere(capsuleCenterUp, radius);
             Gizmos.DrawWireSphere(capsuleCenterDown, radius);
         }
     }
