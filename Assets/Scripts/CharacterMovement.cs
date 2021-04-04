@@ -9,6 +9,8 @@ public class CharacterMovement : MonoBehaviour
     private Vector3 projectOnPlane;
     private Quaternion rotationToCamForward;
 
+
+
     [Header("Physics")]
     [SerializeField] public float gravity = -9.81f;
 
@@ -19,6 +21,7 @@ public class CharacterMovement : MonoBehaviour
     [Header("Move Settings")]
     [SerializeField, Range(0f, 100f)] public float maxSpeed = 10f;
     [SerializeField, Range(0f, 300f)] public float maxAcceleration = 10f;
+    protected float verticalSpeed = 1f;
 
     [Header("Jump settings")]
     [SerializeField, Range(0f, 10f)] public float gravityScale = 1f;
@@ -43,6 +46,8 @@ public class CharacterMovement : MonoBehaviour
     private Vector3 capsuleCenterDown;
     private Vector3 capsuleCenterUp;
     private bool isGrounded = false;
+
+    private Vector3 movementVertical;
 
     private void Awake()
     {
@@ -96,8 +101,27 @@ public class CharacterMovement : MonoBehaviour
     {
         this.Jump();
         this.Move();
+        this.MoveVertical();
 
     }
+
+    private void OnAnimatorMove()
+    {
+        movementVertical += verticalSpeed * Vector3.up * Time.deltaTime;
+        rBody.MovePosition(movementVertical);
+
+
+        // If character is not on the ground then send the vertical speed to the animator.
+        // This is so the vertical speed is kept when landing so the correct landing animation is played.
+        //if (!isGrounded)
+        //    m_Animator.SetFloat(m_HashAirborneVerticalSpeed, verticalSpeed);
+
+
+    }
+
+
+
+
     private void OnMoveWASD(InputAction.CallbackContext context)
     {
         deviceInputMove =  context.ReadValue<Vector2>();
@@ -140,10 +164,26 @@ public class CharacterMovement : MonoBehaviour
         this.rotationToCamForward = Quaternion.LookRotation(this.projectOnPlane);
 
 
-        Vector3 movementSteps = this.velocity * Time.deltaTime;
-        movementSteps = this.rotationToCamForward * movementSteps;
-        rBody.MovePosition(transform.position + movementSteps);
+        Vector3 movement = this.velocity * Time.deltaTime;
+        movement = this.rotationToCamForward * movement;
+        rBody.MovePosition(transform.position + movement);
     }
+
+    public void MoveVertical() 
+    {
+
+        if (requireJump && isGrounded)
+        {
+            verticalSpeed = jumpSpeed;
+        }
+        else
+        {
+            // If character is airborne, apply gravity.
+            verticalSpeed += gravity * Time.deltaTime;
+        }
+
+    }
+
 
     public void Jump()
     {
