@@ -20,7 +20,7 @@ public static class CollisionDetection
         Transform colTransform = collider.transform;
 
         // transform the point into the space of the collider
-        var local = colTransform.InverseTransformPoint(characterOrigin);
+        Vector3 local = colTransform.InverseTransformPoint(characterOrigin);
 
         // Now, shift it to be in the center of the box
         local -= collider.center;
@@ -64,15 +64,53 @@ public static class CollisionDetection
     /// <returns></returns>
     public static Vector3 ClosestPointOn(SphereCollider collider, Vector3 characterOrigin)
     {
-        Vector3 p;
+        Vector3 point;
 
-        p = characterOrigin - collider.transform.position;
-        p.Normalize();
+        point = characterOrigin - collider.transform.position;
+        point.Normalize();
 
         //outborder of sphere
-        p *= collider.radius * collider.transform.localScale.x;
-        p += collider.transform.position;
+        point *= collider.radius * collider.transform.localScale.x;
+        point += collider.transform.position;
 
-        return p;
+        return point;
+    }
+
+
+    /// <summary>
+    /// wow remove Vec.zero of this shity function
+    /// </summary>
+    /// <param name="sphereOrigin"></param>
+    /// <param name="radius"></param>
+    /// <param name="contactPointDebug"></param>
+    /// <returns></returns>
+    public static Vector3 OverlappingSphere(Vector3 sphereOrigin, float radius, ref Vector3 contactPointDebug) 
+    {
+        Vector3 contactPoint = Vector3.zero;
+        foreach (Collider col in Physics.OverlapSphere(sphereOrigin, radius))
+        {
+
+            // for different colliders
+            if (col is BoxCollider)
+            {
+                contactPoint = ClosestPointOn((BoxCollider)col, sphereOrigin);
+                //TODO: Remove DebugPoint
+                contactPointDebug = contactPoint;
+                // result of new chracter collision after collision detection
+                Vector3 distance = sphereOrigin - contactPoint;
+                return Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
+            }
+            else if (col is SphereCollider)
+            {
+                contactPoint = ClosestPointOn((SphereCollider)col, sphereOrigin);
+                //TODO: Remove DebugPoint
+                contactPointDebug = contactPoint;
+                // result of new chracter collision after collision detection
+                Vector3 distance = sphereOrigin - contactPoint;
+                return Vector3.ClampMagnitude(distance, Mathf.Clamp(radius - distance.magnitude, 0, radius));
+            }
+        }
+
+        return contactPoint;
     }
 }
